@@ -1,0 +1,773 @@
+
+#include "altera_up_avalon_video_pixel_buffer_dma.h"
+#include "sys/alt_stdio.h"
+#include "system.h"
+#include "altera_avalon_pio_regs.h"
+
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdint.h>
+
+int main(void)
+{ 
+//create pointer for pixel buffer
+
+	alt_up_pixel_buffer_dma_dev * pixel_buf_dma_dev;
+
+	//open pixel buffer
+	pixel_buf_dma_dev = alt_up_pixel_buffer_dma_open_dev("/dev/video_pixel_buffer_dma_0");
+
+	if (pixel_buf_dma_dev == NULL)
+		printf("Error\n");
+	else
+		printf("Opened\n");
+
+	//clear screen
+	alt_up_pixel_buffer_dma_clear_screen(pixel_buf_dma_dev, 0);
+	usleep(1000000);
+
+
+	//Start Coding here:
+    int accel,scale;
+    accel =  IORD_ALTERA_AVALON_PIO_DATA(ACCEL_BASE);
+    printf("%d\n",accel);
+
+	//game control
+    int color,start;
+	int green = 0;
+	int score = 0;
+	int red = 3;
+
+	int y1 = rand()%300;
+	int y2 = (rand()%310)+y1;
+	int rate = (rand()%52)+14;
+	//int rate = 6;
+	int box1 = 0;
+	int box2 = 0;
+	int flag = 0;
+
+
+
+
+	while(1)
+	{
+
+		box1 = 320-green;
+		box2 = 370-green;
+
+		accel =  (((IORD_ALTERA_AVALON_PIO_DATA(ACCEL_BASE))&0XFF));
+
+		if(accel<=15)
+		{
+			scale = (120+(accel*8));
+		}
+		else if(accel >15)
+		{
+			scale = (120-((255-accel)*8));
+		}
+
+		if(y1%2 == 0)
+		{
+			color = 0x07EF;
+		}
+		else
+		{
+			color = 0xf80E;
+		}
+
+
+
+
+	if(flag == 0)
+	    {
+		//Blue box
+		alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 0,0+scale,40,3+scale,0x0077,0);
+		green = green + rate;
+	//green and red boxes
+	alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, box1,y1,box2,y2,color,0);
+	    }
+
+	usleep(110000);
+
+	if((box1<40)&((((3+scale)<=y2)&((0+scale)>=y1)) | (((3+scale)>y2)&((0+scale)<y2)) | (((3+scale)>y1)&((0+scale)<y1))) )
+	{
+		flag = 1;
+	}
+	//clear screen
+	alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 0,0+scale,40,3+scale,0x0000,0);
+	//green and red boxes
+	alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, box1,y1,box2,y2,0x0000,0);
+
+
+
+
+	if((green > 320)|(flag ==1))
+	{
+
+
+		green = 0;
+		rate = (rand()%52)+14;
+		//rate = 10;
+		y1 = rand()%300;
+		y2 = (rand()%310)+y1;
+
+		if((color == 0xf80E)&(flag ==1))
+		{
+			red = red -1;
+			printf("Red: %d\n",red);
+		}
+		if((color == 0x07EF)&(flag ==1))
+		{
+		score = score  + 1;
+		printf("Score: %d\n",score);
+		}
+		flag = 0;
+		if(red == 0)
+		{
+			red= 3;
+			flag = 10;
+		}
+
+	}
+	while(flag == 10)
+	{
+
+		//clear screen
+
+			usleep(1000000);
+			//E
+			alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 130,96,136,98,0x07E0,0);
+			alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 128,96,130,116,0x07E0,0);
+			alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 129,103,136,105,0x07E0,0);
+			alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 130,114,136,116,0x07E0,0);
+			//N
+			alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 142,96,144,116,0x07E0,0);
+			alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 144,98,146,100,0x07E0,0);
+			alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 146,100,148,102,0x07E0,0);
+			alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 148,102,150,104,0x07E0,0);
+			alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 152,96,154,116,0x07E0,0);
+			//D
+			alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 160,96,162,116,0x07E0,0);
+			alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 160,96,168,98,0x07E0,0);
+			alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 170,98,172,114,0x07E0,0);
+			alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 160,114,168,116,0x07E0,0);
+
+			//SCORE
+
+	    //Display score and press key to start
+
+			int grid1[31] = {0};
+			 int grid2[31]= {0};
+			 int grid3[31] = {0};
+
+			 int score2 = score/10;
+			 int score1 = score2/10;
+			 int score3 = score%10;
+
+			 if (score1 == 0)
+			 {
+				 grid1[2] = 0x07E0;
+				 grid1[3] = 0x07E0;
+				 grid1[4] = 0x07E0;
+				 grid1[6] = 0x07E0;
+				 grid1[11] = 0x07E0;
+				 grid1[16] = 0x07E0;
+				 grid1[21] = 0x07E0;
+				 grid1[27] = 0x07E0;
+				 grid1[28] = 0x07E0;
+				 grid1[29] = 0x07E0;
+				 grid1[25] = 0x07E0;
+				 grid1[20] = 0x07E0;
+				 grid1[15] = 0x07E0;
+				 grid1[10] = 0x07E0;
+
+			 }
+			 if (score1 == 1)
+			  {
+			 	 grid1[4] = 0x07E0;
+			 	 grid1[8] = 0x07E0;
+			 	 grid1[9] = 0x07E0;
+			 	 grid1[14] = 0x07E0;
+			 	 grid1[19] = 0x07E0;
+			 	 grid1[24] = 0x07E0;
+			 	 grid1[29] = 0x07E0;
+			 	 grid1[30] = 0x07E0;
+			 	 grid1[28] = 0x07E0;
+
+			  }
+			 if (score1 == 2)
+			  {
+			 	 grid1[2] = 0x07E0;
+			 	 grid1[3] = 0x07E0;
+			 	 grid1[4] = 0x07E0;
+			 	 grid1[9] = 0x07E0;
+			 	 grid1[12] = 0x07E0;
+			 	 grid1[13] = 0x07E0;
+			 	 grid1[14] = 0x07E0;
+			 	 grid1[17] = 0x07E0;
+			 	 grid1[22] = 0x07E0;
+			 	 grid1[27] = 0x07E0;
+			 	 grid1[28] = 0x07E0;
+			 	 grid1[29] = 0x07E0;
+
+
+			  }
+			 if (score1 == 3)
+			  {
+			 	 grid1[2] = 0x07E0;
+			 	 grid1[3] = 0x07E0;
+			 	 grid1[4] = 0x07E0;
+			 	 grid1[9] = 0x07E0;
+			 	 grid1[14] = 0x07E0;
+			 	 grid1[19] = 0x07E0;
+			 	 grid1[24] = 0x07E0;
+			 	 grid1[29] = 0x07E0;
+			 	 grid1[27] = 0x07E0;
+			 	 grid1[28] = 0x07E0;
+			 	 grid1[12] = 0x07E0;
+			 	 grid1[13] = 0x07E0;
+			  }
+			 if (score1 == 4)
+			  {
+			 	 grid1[2] = 0x07E0;
+			 	 grid1[7] = 0x07E0;
+			 	 grid1[12] = 0x07E0;
+			 	 grid1[13] = 0x07E0;
+			 	 grid1[14] = 0x07E0;
+			 	 grid1[9] = 0x07E0;
+			 	 grid1[4] = 0x07E0;
+			 	 grid1[19] = 0x07E0;
+			 	 grid1[24] = 0x07E0;
+			 	 grid1[29] = 0x07E0;
+			  }
+
+			 if (score1 == 5)
+			  {
+			 	 grid1[2] = 0x07E0;
+			 	 grid1[3] = 0x07E0;
+			 	 grid1[4] = 0x07E0;
+			 	 grid1[7] = 0x07E0;
+			 	 grid1[12] = 0x07E0;
+			 	 grid1[13] = 0x07E0;
+			 	 grid1[14] = 0x07E0;
+			 	 grid1[19] = 0x07E0;
+			 	 grid1[24] = 0x07E0;
+			 	 grid1[29] = 0x07E0;
+			 	 grid1[28] = 0x07E0;
+			 	 grid1[27] = 0x07E0;
+			  }
+			 if (score1 == 6)
+			   {
+			  	 grid1[2] = 0x07E0;
+			  	 grid1[3] = 0x07E0;
+			  	 grid1[4] = 0x07E0;
+			  	 grid1[7] = 0x07E0;
+			  	 grid1[12] = 0x07E0;
+			  	 grid1[13] = 0x07E0;
+			  	 grid1[14] = 0x07E0;
+			  	 grid1[19] = 0x07E0;
+			  	 grid1[24] = 0x07E0;
+			  	 grid1[29] = 0x07E0;
+			  	 grid1[28] = 0x07E0;
+			  	 grid1[27] = 0x07E0;
+			  	grid1[17] = 0x07E0;
+			  	grid1[22] = 0x07E0;
+			   }
+			 if (score1 == 7)
+			    {
+			   	 grid1[2] = 0x07E0;
+			   	 grid1[3] = 0x07E0;
+			   	 grid1[4] = 0x07E0;
+			   	 grid1[9] = 0x07E0;
+			   	 grid1[14] = 0x07E0;
+			   	 grid1[19] = 0x07E0;
+			   	 grid1[24] = 0x07E0;
+			   	 grid1[29] = 0x07E0;
+			    }
+			 if (score1 == 8)
+			    {
+			   	 grid1[2] = 0x07E0;
+			   	 grid1[3] = 0x07E0;
+			   	 grid1[4] = 0x07E0;
+			   	 grid1[9] = 0x07E0;
+			   	 grid1[14] = 0x07E0;
+			   	 grid1[19] = 0x07E0;
+			   	 grid1[24] = 0x07E0;
+			   	 grid1[29] = 0x07E0;
+			   	 grid1[28] = 0x07E0;
+			   	 grid1[27] = 0x07E0;
+			   	 grid1[22] = 0x07E0;
+			   	 grid1[17] = 0x07E0;
+			   	grid1[12] = 0x07E0;
+			   	grid1[7] = 0x07E0;
+			   	grid1[13] = 0x07E0;
+			    }
+
+			 if (score1 == 9)
+			    {
+			   	 grid1[2] = 0x07E0;
+			   	 grid1[3] = 0x07E0;
+			   	 grid1[4] = 0x07E0;
+			   	 grid1[9] = 0x07E0;
+			   	 grid1[14] = 0x07E0;
+			   	 grid1[19] = 0x07E0;
+			   	 grid1[24] = 0x07E0;
+			   	 grid1[29] = 0x07E0;
+			   	 grid1[28] = 0x07E0;
+			   	grid1[27] = 0x07E0;
+			   	grid1[12] = 0x07E0;
+			   	grid1[7] = 0x07E0;
+			   	grid1[13] = 0x07E0;
+			    }
+			//2nd grid
+			 if (score2 == 0)
+			  {
+			 	 grid2[2] = 0x07E0;
+			 	 grid2[3] = 0x07E0;
+			 	 grid2[4] = 0x07E0;
+			 	 grid2[6] = 0x07E0;
+			 	 grid2[11] = 0x07E0;
+			 	 grid2[16] = 0x07E0;
+			 	 grid2[21] = 0x07E0;
+			 	 grid2[27] = 0x07E0;
+			 	 grid2[28] = 0x07E0;
+			 	 grid2[29] = 0x07E0;
+			 	 grid2[25] = 0x07E0;
+			 	 grid2[20] = 0x07E0;
+			 	 grid2[15] = 0x07E0;
+			 	 grid2[10] = 0x07E0;
+
+			  }
+			  if (score2 == 1)
+			   {
+			  	 grid2[4] = 0x07E0;
+			  	 grid2[8] = 0x07E0;
+			  	 grid2[9] = 0x07E0;
+			  	 grid2[14] = 0x07E0;
+			  	 grid2[19] = 0x07E0;
+			  	 grid2[24] = 0x07E0;
+			  	 grid2[29] = 0x07E0;
+			  	 grid2[30] = 0x07E0;
+			  	 grid2[28] = 0x07E0;
+
+			   }
+			  if (score2 == 2)
+			   {
+			  	 grid2[2] = 0x07E0;
+			  	 grid2[3] = 0x07E0;
+			  	 grid2[4] = 0x07E0;
+			  	 grid2[9] = 0x07E0;
+			  	 grid2[12] = 0x07E0;
+			  	 grid2[13] = 0x07E0;
+			  	 grid2[14] = 0x07E0;
+			  	 grid2[17] = 0x07E0;
+			  	 grid2[22] = 0x07E0;
+			  	 grid2[27] = 0x07E0;
+			  	 grid2[28] = 0x07E0;
+			  	 grid2[29] = 0x07E0;
+
+
+			   }
+			  if (score2 == 3)
+			   {
+			  	 grid2[2] = 0x07E0;
+			  	 grid2[3] = 0x07E0;
+			  	 grid2[4] = 0x07E0;
+			  	 grid2[9] = 0x07E0;
+			  	 grid2[14] = 0x07E0;
+			  	 grid2[19] = 0x07E0;
+			  	 grid2[24] = 0x07E0;
+			  	 grid2[29] = 0x07E0;
+			  	 grid2[27] = 0x07E0;
+			  	 grid2[28] = 0x07E0;
+			  	 grid2[12] = 0x07E0;
+			  	 grid2[13] = 0x07E0;
+			   }
+			  if (score2 == 4)
+			   {
+			  	 grid2[2] = 0x07E0;
+			  	 grid2[7] = 0x07E0;
+			  	 grid2[12] = 0x07E0;
+			  	 grid2[13] = 0x07E0;
+			  	 grid2[14] = 0x07E0;
+			  	 grid2[9] = 0x07E0;
+			  	 grid2[4] = 0x07E0;
+			  	 grid2[19] = 0x07E0;
+			  	 grid2[24] = 0x07E0;
+			  	 grid2[29] = 0x07E0;
+			   }
+
+			  if (score2 == 5)
+			   {
+			  	 grid2[2] = 0x07E0;
+			  	 grid2[3] = 0x07E0;
+			  	 grid2[4] = 0x07E0;
+			  	 grid2[7] = 0x07E0;
+			  	 grid2[12] = 0x07E0;
+			  	 grid2[13] = 0x07E0;
+			  	 grid2[14] = 0x07E0;
+			  	 grid2[19] = 0x07E0;
+			  	 grid2[24] = 0x07E0;
+			  	 grid2[29] = 0x07E0;
+			  	 grid2[28] = 0x07E0;
+			  	 grid2[27] = 0x07E0;
+			   }
+			  if (score2 == 6)
+			    {
+			   	 grid2[2] = 0x07E0;
+			   	 grid2[3] = 0x07E0;
+			   	 grid2[4] = 0x07E0;
+			   	 grid2[7] = 0x07E0;
+			   	 grid2[12] = 0x07E0;
+			   	 grid2[13] = 0x07E0;
+			   	 grid2[14] = 0x07E0;
+			   	 grid2[19] = 0x07E0;
+			   	 grid2[24] = 0x07E0;
+			   	 grid2[29] = 0x07E0;
+			   	 grid2[28] = 0x07E0;
+			   	 grid2[27] = 0x07E0;
+			   	grid2[17] = 0x07E0;
+			   	grid2[22] = 0x07E0;
+			    }
+			  if (score2 == 7)
+			     {
+			    	 grid2[2] = 0x07E0;
+			    	 grid2[3] = 0x07E0;
+			    	 grid2[4] = 0x07E0;
+			    	 grid2[9] = 0x07E0;
+			    	 grid2[14] = 0x07E0;
+			    	 grid2[19] = 0x07E0;
+			    	 grid2[24] = 0x07E0;
+			    	 grid2[29] = 0x07E0;
+			     }
+			  if (score2 == 8)
+			     {
+			    	 grid2[2] = 0x07E0;
+			    	 grid2[3] = 0x07E0;
+			    	 grid2[4] = 0x07E0;
+			    	 grid2[9] = 0x07E0;
+			    	 grid2[14] = 0x07E0;
+			    	 grid2[19] = 0x07E0;
+			    	 grid2[24] = 0x07E0;
+			    	 grid2[29] = 0x07E0;
+			    	 grid2[28] = 0x07E0;
+			    	 grid2[27] = 0x07E0;
+			    	 grid2[22] = 0x07E0;
+			    	 grid2[17] = 0x07E0;
+			    	grid2[12] = 0x07E0;
+			    	grid2[7] = 0x07E0;
+			    	grid2[13] = 0x07E0;
+			     }
+
+			  if (score2 == 9)
+			     {
+			    	 grid2[2] = 0x07E0;
+			    	 grid2[3] = 0x07E0;
+			    	 grid2[4] = 0x07E0;
+			    	 grid2[9] = 0x07E0;
+			    	 grid2[14] = 0x07E0;
+			    	 grid2[19] = 0x07E0;
+			    	 grid2[24] = 0x07E0;
+			    	 grid2[29] = 0x07E0;
+			    	 grid2[28] = 0x07E0;
+			    	grid2[27] = 0x07E0;
+			    	grid2[12] = 0x07E0;
+			    	grid2[7] = 0x07E0;
+			    	grid2[13] = 0x07E0;
+			     }
+
+			//3rd Grid
+			  if (score3 == 0)
+			   {
+			  	 grid3[2] = 0x07E0;
+			  	 grid3[3] = 0x07E0;
+			  	 grid3[4] = 0x07E0;
+			  	 grid3[6] = 0x07E0;
+			  	 grid3[11] = 0x07E0;
+			  	 grid3[16] = 0x07E0;
+			  	 grid3[21] = 0x07E0;
+			  	 grid3[27] = 0x07E0;
+			  	 grid3[28] = 0x07E0;
+			  	 grid3[29] = 0x07E0;
+			  	 grid3[25] = 0x07E0;
+			  	 grid3[20] = 0x07E0;
+			  	 grid3[15] = 0x07E0;
+			  	 grid3[10] = 0x07E0;
+
+			   }
+			   if (score3 == 1)
+			    {
+			   	 grid3[4] = 0x07E0;
+			   	 grid3[8] = 0x07E0;
+			   	 grid3[9] = 0x07E0;
+			   	 grid3[14] = 0x07E0;
+			   	 grid3[19] = 0x07E0;
+			   	 grid3[24] = 0x07E0;
+			   	 grid3[29] = 0x07E0;
+			   	 grid3[30] = 0x07E0;
+			   	 grid3[28] = 0x07E0;
+
+			    }
+			   if (score3 == 2)
+			    {
+			   	 grid3[2] = 0x07E0;
+			   	 grid3[3] = 0x07E0;
+			   	 grid3[4] = 0x07E0;
+			   	 grid3[9] = 0x07E0;
+			   	 grid3[12] = 0x07E0;
+			   	 grid3[13] = 0x07E0;
+			   	 grid3[14] = 0x07E0;
+			   	 grid3[17] = 0x07E0;
+			   	 grid3[22] = 0x07E0;
+			   	 grid3[27] = 0x07E0;
+			   	 grid3[28] = 0x07E0;
+			   	 grid3[29] = 0x07E0;
+
+			    }
+			   if (score3 == 3)
+			    {
+			   	 grid3[2] = 0x07E0;
+			   	 grid3[3] = 0x07E0;
+			   	 grid3[4] = 0x07E0;
+			   	 grid3[9] = 0x07E0;
+			   	 grid3[14] = 0x07E0;
+			   	 grid3[19] = 0x07E0;
+			   	 grid3[24] = 0x07E0;
+			   	 grid3[29] = 0x07E0;
+			   	 grid3[27] = 0x07E0;
+			   	 grid3[28] = 0x07E0;
+			   	 grid3[12] = 0x07E0;
+			   	 grid3[13] = 0x07E0;
+			    }
+			   if (score3 == 4)
+			    {
+			   	 grid3[2] = 0x07E0;
+			   	 grid3[7] = 0x07E0;
+			   	 grid3[12] = 0x07E0;
+			   	 grid3[13] = 0x07E0;
+			   	 grid3[14] = 0x07E0;
+			   	 grid3[9] = 0x07E0;
+			   	 grid3[4] = 0x07E0;
+			   	 grid3[19] = 0x07E0;
+			   	 grid3[24] = 0x07E0;
+			   	 grid3[29] = 0x07E0;
+			    }
+
+			   if (score3 == 5)
+			    {
+			   	 grid3[2] = 0x07E0;
+			   	 grid3[3] = 0x07E0;
+			   	 grid3[4] = 0x07E0;
+			   	 grid3[7] = 0x07E0;
+			   	 grid3[12] = 0x07E0;
+			   	 grid3[13] = 0x07E0;
+			   	 grid3[14] = 0x07E0;
+			   	 grid3[19] = 0x07E0;
+			   	 grid3[24] = 0x07E0;
+			   	 grid3[29] = 0x07E0;
+			   	 grid3[28] = 0x07E0;
+			   	 grid3[27] = 0x07E0;
+			    }
+			   if (score3 == 6)
+			     {
+			    	 grid3[2] = 0x07E0;
+			    	 grid3[3] = 0x07E0;
+			    	 grid3[4] = 0x07E0;
+			    	 grid3[7] = 0x07E0;
+			    	 grid3[12] = 0x07E0;
+			    	 grid3[13] = 0x07E0;
+			    	 grid3[14] = 0x07E0;
+			    	 grid3[19] = 0x07E0;
+			    	 grid3[24] = 0x07E0;
+			    	 grid3[29] = 0x07E0;
+			    	 grid3[28] = 0x07E0;
+			    	 grid3[27] = 0x07E0;
+			    	grid3[17] = 0x07E0;
+			    	grid3[22] = 0x07E0;
+			     }
+			   if (score3 == 7)
+			      {
+			     	 grid3[2] = 0x07E0;
+			     	 grid3[3] = 0x07E0;
+			     	 grid3[4] = 0x07E0;
+			     	 grid3[9] = 0x07E0;
+			     	 grid3[14] = 0x07E0;
+			     	 grid3[19] = 0x07E0;
+			     	 grid3[24] = 0x07E0;
+			     	 grid3[29] = 0x07E0;
+			      }
+			   if (score3 == 8)
+			      {
+			     	 grid3[2] = 0x07E0;
+			     	 grid3[3] = 0x07E0;
+			     	 grid3[4] = 0x07E0;
+			     	 grid3[9] = 0x07E0;
+			     	 grid3[14] = 0x07E0;
+			     	 grid3[19] = 0x07E0;
+			     	 grid3[24] = 0x07E0;
+			     	 grid3[29] = 0x07E0;
+			     	 grid3[28] = 0x07E0;
+			     	 grid3[27] = 0x07E0;
+			     	 grid3[22] = 0x07E0;
+			     	 grid3[17] = 0x07E0;
+			     	grid3[12] = 0x07E0;
+			     	grid3[7] = 0x07E0;
+			     	grid3[13] = 0x07E0;
+			      }
+
+			   if (score3 == 9)
+			      {
+			     	 grid3[2] = 0x07E0;
+			     	 grid3[3] = 0x07E0;
+			     	 grid3[4] = 0x07E0;
+			     	 grid3[9] = 0x07E0;
+			     	 grid3[14] = 0x07E0;
+			     	 grid3[19] = 0x07E0;
+			     	 grid3[24] = 0x07E0;
+			     	 grid3[29] = 0x07E0;
+			     	 grid3[28] = 0x07E0;
+			     	 grid3[27] = 0x07E0;
+			     	 grid3[12] = 0x07E0;
+			     	 grid3[7] = 0x07E0;
+			     	 grid3[13] = 0x07E0;
+			      }
+				//SCORE:Grid 1
+							alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 126,122,127,123,grid1[1],0);
+							alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 128,122,129,123,grid1[2],0);
+							alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 130,122,131,123,grid1[3],0);
+							alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 132,122,133,123,grid1[4],0);
+							alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 134,122,135,123,grid1[5],0);
+
+							alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 126,124,127,125,grid1[6],0);
+							alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 128,124,129,125,grid1[7],0);
+							alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 130,124,131,125,grid1[8],0);
+							alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 132,124,133,125,grid1[9],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 134,124,135,125,grid1[10],0);
+
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 126,126,127,127,grid1[11],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 128,126,129,127,grid1[12],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 130,126,131,127,grid1[13],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 132,126,133,127,grid1[14],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 134,126,135,127,grid1[15],0);
+
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 126,128,127,129,grid1[16],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 128,128,129,129,grid1[17],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 130,128,131,129,grid1[18],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 132,128,133,129,grid1[19],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 134,128,135,129,grid1[20],0);
+
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 126,130,127,131,grid1[21],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 128,130,129,131,grid1[22],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 130,130,131,131,grid1[23],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 132,130,133,131,grid1[24],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 134,130,135,131,grid1[25],0);
+
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 126,132,127,133,grid1[26],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 128,132,129,133,grid1[27],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 130,132,131,133,grid1[28],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 132,132,133,133,grid1[29],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 134,132,135,133,grid1[30],0);
+
+						    //SCORE:Grid 2
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 147,122,148,123,grid2[1],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 149,122,150,123,grid2[2],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 151,122,152,123,grid2[3],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 153,122,154,123,grid2[4],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 155,122,156,123,grid2[5],0);
+
+
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 147,124,148,125,grid2[6],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 149,124,150,125,grid2[7],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 151,124,152,125,grid2[8],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 153,124,154,125,grid2[9],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 155,124,156,125,grid2[10],0);
+
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 147,126,148,127,grid2[11],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 149,126,150,127,grid2[12],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 151,126,152,127,grid2[13],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 153,126,154,127,grid2[14],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 155,126,156,127,grid2[15],0);
+
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 147,128,148,129,grid2[16],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 149,128,150,129,grid2[17],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 151,128,152,129,grid2[18],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 153,128,154,129,grid2[19],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 155,128,156,129,grid2[20],0);
+
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 147,130,148,131,grid2[21],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 149,130,150,131,grid2[22],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 151,130,152,131,grid2[23],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 153,130,154,131,grid2[24],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 155,130,156,131,grid2[25],0);
+
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 147,132,148,133,grid2[26],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 149,132,150,133,grid2[27],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 151,132,152,133,grid2[28],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 153,132,154,133,grid2[29],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 155,132,156,133,grid2[30],0);
+
+						    //Score: Grid 3
+
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 168,122,169,123,grid3[1],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 170,122,171,123,grid3[2],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 172,122,173,123,grid3[3],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 174,122,175,123,grid3[4],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 176,122,177,123,grid3[5],0);
+
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 168,124,169,125,grid3[6],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 170,124,171,125,grid3[7],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 172,124,173,125,grid3[8],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 174,124,175,125,grid3[9],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 176,124,177,125,grid3[10],0);
+
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 168,126,169,127,grid3[11],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 170,126,171,127,grid3[12],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 172,126,173,127,grid3[13],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 174,126,175,127,grid3[14],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 176,126,177,127,grid3[15],0);
+
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 168,128,169,129,grid3[16],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 170,128,171,129,grid3[17],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 172,128,173,129,grid3[18],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 174,128,175,129,grid3[19],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 176,128,177,129,grid3[20],0);
+
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 168,130,169,131,grid3[21],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 170,130,171,131,grid3[22],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 172,130,173,131,grid3[23],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 174,130,175,131,grid3[24],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 176,130,177,131,grid3[25],0);
+
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 168,132,169,133,grid3[26],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 170,132,171,133,grid3[27],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 172,132,173,133,grid3[28],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 174,132,175,133,grid3[29],0);
+						    alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 176,132,177,133,grid3[30],0);
+
+
+			start =  (((IORD_ALTERA_AVALON_PIO_DATA(KEY1_BASE))&0XFF));
+			if(start == 0)
+			{
+				flag = 0;
+				score = 0;
+				alt_up_pixel_buffer_dma_clear_screen(pixel_buf_dma_dev, 0);
+			}
+	}
+	}
+
+
+	//}
+/*
+	//green
+	alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 100,100,150,150,0x07E0,0);
+	//red
+	alt_up_pixel_buffer_dma_draw_box (pixel_buf_dma_dev, 200,150,249,199,0xf800,0);
+
+	alt_up_pixel_buffer_dma_draw(pixel_buf_dma_dev, 0x07E0, 100, 100);
+
+	usleep(1000000);
+	*/
+
+}
+
